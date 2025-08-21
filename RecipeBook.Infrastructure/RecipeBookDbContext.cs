@@ -1,13 +1,13 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
+using RecipeBook.Application.Abstractions;
 using RecipeBook.Domain.Entities;
 using System.Collections.Generic;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-
 using System.Reflection.Emit;
 
 namespace RecipeBook.Infrastructure;
 
-public class RecipeBookDbContext : DbContext
+public class RecipeBookDbContext : DbContext, IApplicationDbContext
 {
     public RecipeBookDbContext(DbContextOptions<RecipeBookDbContext> options) : base(options) { }
 

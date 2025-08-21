@@ -1,5 +1,5 @@
 ﻿using MediatR;
-using RecipeBook.Application.DTOs;
+using RecipeBook.Application.DTOs.Categories;
 using RecipeBook.Application.DTOs.Users;
 using RecipeBook.Application.Interfaces.Repositories;
 
@@ -22,7 +22,7 @@ public class GetAllUsersQueryHandler : IRequestHandler<GetAllUsersQuery, List<Us
         // Convert to DTOs
         return users.Select(u => new UserDto
         {
-            UserId = u.UserId,
+            Id = u.UserId,
             Username = u.Username,
             Role = u.Role
         }).ToList();

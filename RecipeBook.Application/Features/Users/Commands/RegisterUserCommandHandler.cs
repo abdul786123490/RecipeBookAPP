@@ -2,8 +2,6 @@
 using RecipeBook.Application.DTOs.Users;
 using RecipeBook.Application.Interfaces.Repositories;
 using RecipeBook.Domain.Entities;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace RecipeBook.Application.Features.Users.Commands;
 
@@ -23,16 +21,12 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, U
         if (existingUser != null)
             throw new Exception("Username already exists");
 
-        // Hash password
-        using var hmac = new HMACSHA256();
-        var passwordHash = Convert.ToBase64String(hmac.ComputeHash(Encoding.UTF8.GetBytes(request.Password)));
-
-        // Create user
+        // Create user directly without hashing
         var user = new User
         {
             Username = request.Username,
-            PasswordHash = passwordHash,
-            Role = "User"
+            PasswordHash = request.Password,  // Save plain text password
+            Role = string.IsNullOrEmpty(request.Role) ? "User" : request.Role
         };
 
         await _userRepository.AddAsync(user);

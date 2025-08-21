@@ -1,34 +1,66 @@
-﻿using MediatR;
+﻿//using MediatR;
+//using RecipeBook.Application.Interfaces.Repositories;
+//using RecipeBook.Application.Interfaces.Services;
+
+//namespace RecipeBook.Application.Features.Users.Queries;
+
+//public class LoginUserQueryHandler : IRequestHandler<LoginUserQuery, string>
+//{
+//    private readonly IUserRepository _userRepository;
+//    private readonly IJwtTokenService _tokenService;
+
+//    public LoginUserQueryHandler(IUserRepository userRepository, IJwtTokenService tokenService)
+//    {
+//        _userRepository = userRepository;
+//        _tokenService = tokenService;
+//    }
+
+//    public async Task<string> Handle(LoginUserQuery request, CancellationToken cancellationToken)
+//    {
+//        // Find user by username
+//        var user = await _userRepository.GetByUsernameAsync(request.Username);
+//        if (user == null)
+//            throw new UnauthorizedAccessException("Invalid username or password");
+
+//        // Compare plain text passwords directly
+//        if (user.PasswordHash != request.Password)
+//            throw new UnauthorizedAccessException("Invalid username or password");
+
+//        // Generate JWT token
+//        return _tokenService.GenerateToken(user);
+//    }
+//}
+
+
+
+using MediatR;
 using RecipeBook.Application.Interfaces.Repositories;
 using RecipeBook.Application.Interfaces.Services;
-using System.Security.Cryptography;
-using System.Text;
 
-namespace RecipeBook.Application.Features.Users.Queries;
-
-public class LoginUserQueryHandler : IRequestHandler<LoginUserQuery, string>
+namespace RecipeBook.Application.Features.Users.Queries
 {
-    private readonly IUserRepository _userRepository;
-    private readonly IJwtTokenService _tokenService;
-
-    public LoginUserQueryHandler(IUserRepository userRepository, IJwtTokenService tokenService)
+    public class LoginUserQueryHandler : IRequestHandler<LoginUserQuery, string>
     {
-        _userRepository = userRepository;
-        _tokenService = tokenService;
-    }
+        private readonly IUserRepository _userRepository;
+        private readonly IJwtTokenService _tokenService;
 
-    public async Task<string> Handle(LoginUserQuery request, CancellationToken cancellationToken)
-    {
-        var user = await _userRepository.GetByUsernameAsync(request.Username);
-        if (user == null)
-            throw new UnauthorizedAccessException("Invalid username or password");
+        public LoginUserQueryHandler(IUserRepository userRepository, IJwtTokenService tokenService)
+        {
+            _userRepository = userRepository;
+            _tokenService = tokenService;
+        }
 
-        using var hmac = new HMACSHA256();
-        var enteredHash = Convert.ToBase64String(hmac.ComputeHash(Encoding.UTF8.GetBytes(request.Password)));
+        public async Task<string> Handle(LoginUserQuery request, CancellationToken cancellationToken)
+        {
+            var user = await _userRepository.GetByUsernameAsync(request.Username);
 
-        if (enteredHash != user.PasswordHash)
-            throw new UnauthorizedAccessException("Invalid username or password");
+            if (user == null || user.PasswordHash != request.Password) // ✅ Using plain password
+                throw new UnauthorizedAccessException("Invalid username or password");
 
-        return _tokenService.GenerateToken(user);
+            // Generate JWT Token with Role included
+            return _tokenService.GenerateToken(user);
+        }
     }
 }
+
+

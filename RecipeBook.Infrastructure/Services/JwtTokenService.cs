@@ -1,94 +1,51 @@
-﻿//using Microsoft.Extensions.Configuration;
-//using Microsoft.IdentityModel.Tokens;
-//using RecipeBook.Application.Interfaces.Services;
-//using RecipeBook.Domain.Entities;
-//using System.IdentityModel.Tokens.Jwt;
-//using System.Security.Claims;
-//using System.Text;
-
-//namespace RecipeBook.Infrastructure.Services;
-
-//public class JwtTokenService : IJwtTokenService
-//{
-//    private readonly IConfiguration _config;
-
-//    public JwtTokenService(IConfiguration config)
-//    {
-//        _config = config;
-//    }
-
-//    public string GenerateToken(User user)
-//    {
-//        var jwtSettings = _config.GetSection("Jwt");
-//        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Key"]!));
-
-//        var claims = new List<Claim>
-//        {
-//            new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
-//            new Claim(ClaimTypes.Name, user.Username),
-//            new Claim(ClaimTypes.Role, user.Role)
-//        };
-
-//        var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-//        var token = new JwtSecurityToken(
-//            issuer: jwtSettings["Issuer"],
-//            audience: jwtSettings["Audience"],
-//            claims: claims,
-//            expires: DateTime.UtcNow.AddMinutes(Convert.ToDouble(jwtSettings["ExpireMinutes"])),
-//            signingCredentials: credentials
-//        );
-
-//        return new JwtSecurityTokenHandler().WriteToken(token);
-//    }
-//}
-
-
-
-
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using RecipeBook.Application.Interfaces.Services;
 using RecipeBook.Domain.Entities;
+using System;
+using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 
-namespace RecipeBook.Infrastructure.Services
+namespace RecipeBook.Application.Services.Implementations
 {
     public class JwtTokenService : IJwtTokenService
     {
-        private readonly IConfiguration _config;
+        private readonly IConfiguration _configuration;
 
-        public JwtTokenService(IConfiguration config)
+        public JwtTokenService(IConfiguration configuration)
         {
-            _config = config;
+            _configuration = configuration;
         }
 
         public string GenerateToken(User user)
         {
-            var jwtSettings = _config.GetSection("Jwt");
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Key"]!));
+            var jwtKey = _configuration["Jwt:Key"] ?? "ThisIsYourSecretKeyForJWT";
+            var jwtIssuer = _configuration["Jwt:Issuer"] ?? "RecipeBookAPI";
 
+            // ✅ Include essential claims
             var claims = new List<Claim>
             {
-                new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
-                new Claim(ClaimTypes.Name, user.Username),
-                new Claim(ClaimTypes.Role, user.Role)
+                new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),  // User ID
+                new Claim(ClaimTypes.Name, user.Username),                     // Username
+                new Claim(ClaimTypes.Role, user.Role),                         // Role for [Authorize(Roles="admin")]
+                new Claim(JwtRegisteredClaimNames.Sub, user.Username),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
             };
 
-            var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
             var token = new JwtSecurityToken(
-                issuer: jwtSettings["Issuer"],
-                audience: jwtSettings["Audience"],
+                issuer: jwtIssuer,
+                audience: "RecipeBookUsers",
                 claims: claims,
-                expires: DateTime.UtcNow.AddMinutes(Convert.ToDouble(jwtSettings["ExpireMinutes"])),
-                signingCredentials: credentials
+                expires: DateTime.UtcNow.AddHours(3),
+                signingCredentials: creds
             );
 
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
     }
 }
-
